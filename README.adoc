@@ -5,6 +5,8 @@ With the Arduino Ethernet Shield, this library allows an Arduino board to connec
 For more information about this library please visit us at
 http://www.arduino.cc/en/Reference/Ethernet
 
+Modified by Steven Lian to support ESP32 ethernet upgrade
+
 == License ==
 
 Copyright (c) 2010 Arduino LLC. All right reserved.
