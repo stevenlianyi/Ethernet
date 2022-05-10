@@ -53,6 +53,54 @@
 #include "Server.h"
 #include "Udp.h"
 
+// Steven Lian added 2022/05/09 begin
+//W5500 PHYCFGR (W5500 PHY Configuration Register) [R/W] [0x002E] [0b10111XXX]
+//bit 7 RST Reset [R/W] When this bit is ‘0’, internal PHY is reset. After PHY reset, it should be set as ‘1’.
+
+//bit 6 OPMD Configure PHY Operation Mode
+//1: Configure with OPMDC[2:0] in PHYCFGR
+//0: Configure with the H/W PINs(PMODE[2:0])
+
+//bits 5~3 OPMDC
+//Operation Mode Configuration Bit[R/W]
+// 0 0 0 10BT Half-duplex, Auto-negotiation disabled
+// 0 0 1 10BT Full-duplex, Auto-negotiation disabled
+// 0 1 0 100BT Half-duplex, Auto-negotiation disabled
+// 0 1 1 100BT Full-duplex, Auto-negotiation disabled
+// 1 0 0 100BT Half-duplex, Auto-negotiation enabled
+// 1 0 1 Not used
+// 1 1 0 Power Down mode
+// 1 1 1 All capable, Auto-negotiation enabled, default
+
+// bit 2 DPX Duplex Status [Read Only]
+// 1: Full duplex
+// 0: Half duplex
+
+// bit 1 SPD Speed Status [Read Only]
+// 1: 100Mpbs based
+// 0: 10Mpbs based
+
+// bit 0 LNK Link Status [Read Only]
+// 1: Link up
+// 0: Link down
+
+#define W5500_PHYCFGR_RST_MASK                  0b10000000
+#define W5500_PHYCFGR_RST_RESET                 0b00000000
+#define W5500_PHYCFGR_RST_DEFAULT               0b10000000
+#define W5500_PHYCFGR_OPMD_MASK                 0b01000000
+#define W5500_PHYCFGR_OPMD_DEFAULT              0b01000000
+#define W5500_PHYCFGR_OPMDC_MASK                0b00111000
+#define W5500_PHYCFGR_OPMDC_10BT_HALF_DISABLED  0b00000000
+#define W5500_PHYCFGR_OPMDC_10BT_FULL_DISABLED  0b00001000
+#define W5500_PHYCFGR_OPMDC_100BT_HALF_DISABLED 0b00010000
+#define W5500_PHYCFGR_OPMDC_100BT_FULL_DISABLED 0b00011000
+#define W5500_PHYCFGR_OPMDC_100BT_FULL_ENABLED  0b00100000
+#define W5500_PHYCFGR_OPMDC_ALL_AUTO_ENABLED    0b00111000
+#define W5500_PHYCFGR_DPX_MASK                  0b00000100
+#define W5500_PHYCFGR_SPD_MASK                  0b00000010
+#define W5500_PHYCFGR_LINK_MASK                 0b00000001
+// Steven Lian added 2022/05/09 end
+
 enum EthernetLinkStatus {
 	Unknown,
 	LinkON,
@@ -104,6 +152,10 @@ public:
 	void setDnsServerIP(const IPAddress dns_server) { _dnsServerAddress = dns_server; }
 	void setRetransmissionTimeout(uint16_t milliseconds);
 	void setRetransmissionCount(uint8_t num);
+
+	uint8_t readPhystatus(); //Steven Lian added 2022/05/09, for cable not connection issue 
+	uint8_t writePhystatus(uint8_t val); //Steven Lian added 2022/05/09, for cable not connection issue 
+	uint8_t softReset(); //Steven Lian added 2022/05/09, for cable not connection issue 
 
 	friend class EthernetClient;
 	friend class EthernetServer;
@@ -206,6 +258,7 @@ public:
 	// Return the port of the host who sent the current incoming packet
 	virtual uint16_t remotePort() { return _remotePort; };
 	virtual uint16_t localPort() { return _port; }
+
 };
 
 

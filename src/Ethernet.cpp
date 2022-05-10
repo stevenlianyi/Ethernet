@@ -33,6 +33,7 @@ int EthernetClass::begin(uint8_t *mac, unsigned long timeout, unsigned long resp
 
 	// Initialise the basic info
 	if (W5100.init() == 0) return 0;
+	Ethernet.softReset(); //Steven Lian added 2022/05/09 to fix cable cannot be detected issue
 	SPI.beginTransaction(SPI_ETHERNET_SETTINGS);
 	W5100.setMACAddress(mac);
 	W5100.setIPAddress(IPAddress(0,0,0,0).raw_address());
@@ -81,6 +82,7 @@ void EthernetClass::begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress g
 void EthernetClass::begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress gateway, IPAddress subnet)
 {
 	if (W5100.init() == 0) return;
+	Ethernet.softReset(); //Steven Lian added 2022/05/09 to fix cable cannot be detected issue
 	SPI.beginTransaction(SPI_ETHERNET_SETTINGS);
 	W5100.setMACAddress(mac);
 #if ARDUINO > 106 || TEENSYDUINO > 121
@@ -120,6 +122,77 @@ EthernetHardwareStatus EthernetClass::hardwareStatus()
 		default: return EthernetNoHardware;
 	}
 }
+
+//Steven Lian added begin, 2022/05/09
+//PHYCFGR (W5500 PHY Configuration Register) [R/W] [0x002E] [0b10111XXX]
+uint8_t EthernetClass::readPhystatus()
+{
+	uint8_t phystatus = 0;
+
+	if (!W5100.init()) return phystatus;
+	switch (W5100.getChip()) {
+	  case 52:
+		SPI.beginTransaction(SPI_ETHERNET_SETTINGS);
+		phystatus = W5100.readPSTATUS_W5200();
+		SPI.endTransaction();
+		break;
+	  case 55:
+		SPI.beginTransaction(SPI_ETHERNET_SETTINGS);
+		phystatus = W5100.readPHYCFGR_W5500();
+		SPI.endTransaction();
+		break;
+	  default:
+	    break;
+	}
+	return phystatus;
+}
+
+uint8_t EthernetClass::writePhystatus(uint8_t val)
+{
+	uint8_t phystatus = 0;
+	
+	if (!W5100.init()) return phystatus;
+	switch (W5100.getChip()) {
+	  case 52:
+		SPI.beginTransaction(SPI_ETHERNET_SETTINGS);
+		W5100.writePSTATUS_W5200(val);
+		SPI.endTransaction();
+		break;
+	  case 55:
+		SPI.beginTransaction(SPI_ETHERNET_SETTINGS);
+		W5100.writePHYCFGR_W5500(val);
+		SPI.endTransaction();
+		break;
+	  default:
+		break;
+	}
+	phystatus = readPhystatus();
+	return phystatus;
+}
+
+
+uint8_t EthernetClass::softReset()
+{
+  uint8_t phystatus;
+  uint8_t status;
+  uint8_t writeVal;
+  phystatus = readPhystatus();
+  status = phystatus & (~W5500_PHYCFGR_RST_MASK);
+  //DBGPRINTF("\n-> etherenet_soft_reset:[%02X]",phystatus);
+  //DBGPRINTF("\n-> status:[%02X]",status);
+  writeVal = status | W5500_PHYCFGR_RST_RESET;
+  //DBGPRINTF("\n-> writeVal:[%02X]",writeVal);
+  Ethernet.writePhystatus(writeVal);
+  delay(100);
+  writeVal = status | W5500_PHYCFGR_RST_DEFAULT;
+  //DBGPRINTF("\n-> writeVal:[%02X]",writeVal);
+  Ethernet.writePhystatus(writeVal);
+  delay(100);
+  //phystatus = readPhystatus();
+  //DBGPRINTF("\n-> phystatus:[%02X]",phystatus);
+}
+
+//Steven Lian added end, 2022/05/09
 
 int EthernetClass::maintain()
 {
@@ -229,14 +302,6 @@ void EthernetClass::setRetransmissionCount(uint8_t num)
 	W5100.setRetransmissionCount(num);
 	SPI.endTransaction();
 }
-
-
-
-
-
-
-
-
 
 
 EthernetClass Ethernet;
