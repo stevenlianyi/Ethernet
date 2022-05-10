@@ -6,6 +6,7 @@ For more information about this library please visit us at
 http://www.arduino.cc/en/Reference/Ethernet
 
 Modified by Steven Lian to support ESP32 ethernet upgrade
+Initialization (begin) add soft reset to avoid the switch can not detect the cable
 
 == License ==
 
