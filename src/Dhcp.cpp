@@ -102,6 +102,7 @@ int DhcpClass::request_DHCP_lease()
 
 		if (result != 1 && ((millis() - startTime) > _timeout))
 			break;
+		delayMicroseconds(100);//StevenLian added 2022/05/07, Add 100 ms delay to avoid watchdog reset
 	}
 
 	// We're done with the socket now
